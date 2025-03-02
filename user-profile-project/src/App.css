@@ -1,0 +1,134 @@
+input {
+  background-color: tan;
+  margin: 10px;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid black;
+}
+
+button {
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 10px;
+  background-color: aqua;
+}
+
+button:hover {
+  background-color: skyblue;
+  color: white;
+}
+
+.signup button {
+  background-color: green;
+}
+
+.signup button:hover {
+  background-color: lightgreen;
+  color: rgb(42, 105, 133);
+}
+
+.signup {
+  background-image: linear-gradient(to right,lightgray,rgb(7, 47, 63), rgb(147, 22, 161), rgb(204, 84, 23));
+  background-color: skyblue;
+  color: rgb(222, 28, 92);
+  text-align: center;
+  border: 1px solid skyblue;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 10px;
+  border-width: 2px;
+  width: 100%;
+  animation: fadeIn 2s ease-in-out;
+}
+
+.login {
+  background-image: linear-gradient(to left,lightyellow,rgb(58, 136, 16), rgb(228, 211, 49), rgb(31, 87, 101));
+  background-color: violet;
+  color: rgb(222, 28, 92);
+  text-align: center;
+  border: 1px solid violet;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 10px;
+  border-width: 2px;
+  width: 100%;
+  animation: fadeIn 2s ease-in-out;
+}
+
+.login button {
+  background-color: silver;
+}
+
+.login button:hover {
+  background-color: lightgray;
+  color: rgb(42, 105, 133);
+}
+
+.profile {
+  background-image: radial-gradient(rgb(42, 105, 133), rgb(194, 114, 140), rgb(222, 28, 92));
+  background-color: darkseagreen;
+  color: rgb(222, 28, 92);
+  text-align: center;
+  border: 1px solid darkseagreen;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 10px;
+  border-width: 2px;
+  width: 100%;
+  animation: fadeIn 2s ease-in-out;
+}
+
+.profile button {
+  background-color: yellow;
+}
+
+.profile button:hover {
+  background-color: lightyellow;
+  color: rgb(42, 105, 133);
+}
+
+.file-upload {
+  background-image: linear-gradient(green,yellow,white);
+  background-color: aqua;
+  color: rgb(222, 28, 92);
+  border: 1px solid aqua;
+  padding: 10px 10px 10px 10px;
+  margin: 10px;
+  border-radius: 10px;
+  border-width: 2px;
+  text-align: center;
+  width: 100%;
+  animation: fadeIn 2s ease-in-out;
+}
+
+.file-upload button {
+  background-color: orange;
+}
+
+.file-upload button:hover {
+  background-color: lightcoral;
+  color: rgb(42, 105, 133);
+}
+
+div {
+  border: 1px;
+  background-image: linear-gradient(blue,  rgb(27, 151, 155),rgb(42, 105, 133));
+  border-radius: 5px;
+  border-width: 2px;
+  width: 50%;
+  margin: auto;
+  padding: 10px 10px 10px 10px;
+}
+
+h1 {
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
