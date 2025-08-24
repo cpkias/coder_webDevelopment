@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Age Calculator</title>
+  <link rel="stylesheet" href="./assets/styles.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Age Calculator</h1>
+    <form id="age-form" novalidate>
+      <label for="dob">Date of birth</label>
+      <input id="dob" name="dob" type="date" required max=""/>
+      <button type="submit">Calculate</button>
+    </form>
+    <section id="result" aria-live="polite"></section>
+  </main>
+  <script src="./assets/app.js"></script>
+</body>
+</html>
