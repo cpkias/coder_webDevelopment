@@ -1,0 +1,68 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isOrganizer() {
+      return isAuthenticated() && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'organizer' &&
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isApproved == true;
+    }
+    
+    function isOrganizerOrAdmin() {
+      return isAdmin() || isOrganizer();
+    }
+    
+    function isValidImageFile() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size < 5 * 1024 * 1024; // 5MB limit
+    }
+    
+    function isValidDocumentFile() {
+      return request.resource.contentType.matches('(application/pdf|application/msword|application/vnd.openxmlformats-officedocument.wordprocessingml.document)') &&
+             request.resource.size < 10 * 1024 * 1024; // 10MB limit
+    }
+
+    // Event images
+    match /events/{eventId}/images/{imageId} {
+      // Anyone can read event images
+      allow read;
+      
+      // Organizers and admins can upload event images
+      allow write: if isOrganizerOrAdmin() && isValidImageFile();
+    }
+
+    // Event attachments
+    match /events/{eventId}/attachments/{attachmentId} {
+      // Anyone can read event attachments
+      allow read;
+      
+      // Organizers and admins can upload event attachments
+      allow write: if isOrganizerOrAdmin() && isValidDocumentFile();
+    }
+
+    // User profile pictures
+    match /users/{userId}/profile/{imageId} {
+      // Anyone can read profile pictures
+      allow read;
+      
+      // Users can upload their own profile pictures
+      allow write: if isAuthenticated() && 
+                      request.auth.uid == userId && 
+                      isValidImageFile();
+    }
+
+    // Admin uploads (unrestricted for admins)
+    match /admin/{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
