@@ -1,0 +1,27 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() {
+      return isSignedIn() && get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    function isOrganizer() {
+      return isSignedIn() && (
+        get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['organizer', 'admin'] &&
+        get(/databases/(default)/documents/users/$(request.auth.uid)).data.approvedOrganizer == true
+      );
+    }
+
+    // Event images
+    match /images/events/{eventId}/{fileName} {
+      allow read: if true; // public thumbnails
+      allow write: if isOrganizer();
+    }
+
+    // Event attachments
+    match /attachments/events/{eventId}/{fileName} {
+      allow read: if true;
+      allow write: if isOrganizer();
+    }
+  }
+}
