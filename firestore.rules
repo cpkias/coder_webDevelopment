@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && getUserData().role == 'admin';
+    }
+    
+    function isOrganizer() {
+      return isAuthenticated() && (getUserData().role == 'organizer' || getUserData().role == 'admin');
+    }
+    
+    function isApproved() {
+      return isAuthenticated() && getUserData().isApproved == true;
+    }
+    
+    function isEventOrganizer(eventData) {
+      return isAuthenticated() && eventData.organizerId == request.auth.uid;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Anyone can read user profiles (for organizer info, etc.)
+      allow read: if true;
+      
+      // Users can create their own profile during signup
+      allow create: if isUser(userId) && 
+                      request.resource.data.uid == userId &&
+                      request.resource.data.email == request.auth.token.email;
+      
+      // Users can update their own profile, admins can update any profile
+      allow update: if isUser(userId) || isAdmin();
+      
+      // Only admins can delete users
+      allow delete: if isAdmin();
+    }
+
+    // Events collection
+    match /events/{eventId} {
+      // Anyone can read events (public access)
+      allow read: if true;
+      
+      // Only approved organizers can create events
+      allow create: if isOrganizer() && 
+                      isApproved() &&
+                      request.resource.data.organizerId == request.auth.uid;
+      
+      // Event organizer or admin can update
+      allow update: if (isAuthenticated() && 
+                       resource.data.organizerId == request.auth.uid) || 
+                       isAdmin();
+      
+      // Event organizer or admin can delete
+      allow delete: if (isAuthenticated() && 
+                       resource.data.organizerId == request.auth.uid) || 
+                       isAdmin();
+    }
+
+    // Registrations collection
+    match /registrations/{registrationId} {
+      // Users can read their own registrations, organizers can read registrations for their events, admins can read all
+      allow read: if isAuthenticated() && 
+                    (resource.data.userId == request.auth.uid || 
+                     isAdmin() ||
+                     get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.organizerId == request.auth.uid);
+      
+      // Authenticated and approved users can create registrations for themselves
+      allow create: if isAuthenticated() && 
+                      isApproved() &&
+                      request.resource.data.userId == request.auth.uid;
+      
+      // Users can delete their own registrations (unregister)
+      allow delete: if isAuthenticated() && 
+                      resource.data.userId == request.auth.uid;
+      
+      // Organizers and admins can update registration status
+      allow update: if isAdmin() || 
+                      get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.organizerId == request.auth.uid;
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Users can only read their own notifications
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Only server (Cloud Functions) or admins can create notifications
+      allow create: if isAdmin();
+      
+      // Users can update their own notifications (mark as read)
+      allow update: if isAuthenticated() && 
+                      resource.data.userId == request.auth.uid &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      
+      // Users can delete their own notifications
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Announcements collection (optional, for persistent announcements)
+    match /announcements/{announcementId} {
+      // Anyone can read announcements
+      allow read: if true;
+      
+      // Only admins can create, update, or delete announcements
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}

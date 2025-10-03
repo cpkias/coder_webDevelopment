@@ -1,0 +1,47 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isImageFile() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isUnder5MB() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Event images
+    match /events/{allPaths=**} {
+      // Anyone can read event images
+      allow read: if true;
+      
+      // Authenticated users can upload event images (must be images under 5MB)
+      allow create: if isAuthenticated() && 
+                      isImageFile() && 
+                      isUnder5MB();
+      
+      // Users who uploaded can delete their images
+      allow delete: if isAuthenticated();
+    }
+
+    // User profile images
+    match /users/{userId}/{allPaths=**} {
+      // Anyone can read profile images
+      allow read: if true;
+      
+      // Users can upload their own profile images
+      allow create, update: if isAuthenticated() && 
+                              request.auth.uid == userId &&
+                              isImageFile() && 
+                              isUnder5MB();
+      
+      // Users can delete their own profile images
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+  }
+}
