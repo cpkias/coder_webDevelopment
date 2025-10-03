@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
+    function isApprovedOrganizer() {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'organizer' &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approvedOrganizer == true
+      );
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isSignedIn() && (userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && userId == request.auth.uid;
+      allow update: if isSignedIn() && (userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // Public pages may read published events
+    match /events/{eventId} {
+      allow read: if resource.data.status == 'published' || isAdmin() || (isSignedIn() && resource.data.organizerId == request.auth.uid);
+      allow create: if isApprovedOrganizer() || isAdmin();
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.organizerId == request.auth.uid);
+
+      // Each event has registrations keyed by the UID to prevent duplicates
+      match /registrations/{uid} {
+        allow read: if isSignedIn() && (uid == request.auth.uid || isAdmin() || (isSignedIn() && get(/databases/$(database)/documents/events/$(eventId)).data.organizerId == request.auth.uid));
+
+        allow create: if isSignedIn() && uid == request.auth.uid &&
+          // deadline not passed
+          (get(/databases/$(database)/documents/events/$(eventId)).data.registrationDeadline.toMillis() > request.time.toMillis()) &&
+          // capacity not exceeded based on server-maintained attendeeCount
+          (get(/databases/$(database)/documents/events/$(eventId)).data.attendeeCount < get(/databases/$(database)/documents/events/$(eventId)).data.capacity) &&
+          // status is published
+          (get(/databases/$(database)/documents/events/$(eventId)).data.status == 'published');
+
+        // unregister only self
+        allow delete: if isSignedIn() && uid == request.auth.uid;
+        // prevent client updates; updates only via CF if ever needed
+        allow update: if false;
+      }
+    }
+
+    // Notifications visible only to owner or admin
+    match /notifications/{noteId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Announcements by admin; readable by all
+    match /announcements/{id} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
